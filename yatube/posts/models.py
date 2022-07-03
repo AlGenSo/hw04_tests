@@ -1,6 +1,5 @@
 from django.db import models
 from django.contrib.auth import get_user_model
-from pytils.translit import slugify
 
 from .constants import STRING_LENGHT_LIMIT
 
@@ -59,8 +58,3 @@ class Group(models.Model):
 
     def __str__(self) -> str:
         return self.title
-
-    def save(self, *args, **kwargs):
-        if not self.slug:
-            self.slug = slugify(self.title)[:80]
-        super().save(*args, **kwargs)
