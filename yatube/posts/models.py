@@ -62,5 +62,5 @@ class Group(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.slug:
-            self.slug = slugify(self.title)[:100]
+            self.slug = slugify(self.title)[:80]
         super().save(*args, **kwargs)
