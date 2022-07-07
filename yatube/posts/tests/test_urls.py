@@ -1,5 +1,6 @@
 from django.contrib.auth import get_user_model
 from django.test import TestCase, Client
+from http import HTTPStatus
 
 from ..models import Group, Post
 
@@ -22,11 +23,9 @@ class StaticURLTests(TestCase):
             author=cls.user,
             text='Тестовая пост',
             group=cls.group,
-            id='7',
         )
 
     def setUp(self):
-        self.guest_client = Client()
         self.guest = User.objects.create_user(username='HasNoName')
         self.authorized_client = Client()
         self.authorized_client.force_login(self.guest)
@@ -35,26 +34,84 @@ class StaticURLTests(TestCase):
         self.author_client.force_login(self.user)
 
     def the_test_page_is_available_only_to_the_author(self):
-        response = self.author_client.get('/posts/7/edit')
-        self.assertEqual(response.status_code, 200)
+        '''Страница доступна только автору'''
+        response = self.author_client.get(self.post.id)
+        self.assertEqual(response.status_code, HTTPStatus.OK)
 
     def test_urls_uses_correct_template(self):
+        '''Проверка доступности страниц
+        и названия шаблонов приложения'''
         templates_url_names = {
-            'posts/index.html': '/',
-            'posts/group_list.html': '/group/test-slug/',
-            'posts/profile.html': '/profile/auth/',
-            'posts/post_detail.html': '/posts/7/',
-            'posts/post_create.html': '/create/'
+            '/': 'posts/index.html',
+            '/group/test-slug/': 'posts/group_list.html',
+            '/profile/auth/': 'posts/profile.html',
+            f'/posts/{self.post.id}/': 'posts/post_detail.html',
+            '/create/': 'posts/post_create.html',
+            f'/posts/{self.post.id}/edit/': 'posts/post_create.html',
         }
-        for template, adress in templates_url_names.items():
+        for adress, template in templates_url_names.items():
             with self.subTest(adress=adress):
-                if self.authorized_client:
-                    response = self.authorized_client.get(adress)
-                    self.assertTemplateUsed(response, template)
-                else:
-                    response = self.guest_client.get(adress)
+                if self.author_client:
+                    response = self.author_client.get(adress)
                     self.assertTemplateUsed(response, template)
 
     def test_request_to_a_non_existent_page(self):
+        '''Запрос к несуществующей странице вернёт ошибку 404.'''
         response = self.authorized_client.get('/unexisting_page/')
-        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
+
+    def test_availability_of_public_pages_for_guests(self):
+        '''тест доступности публичных страниц для гостей'''
+        templates_url_name = {
+            'posts/index.html': '/',
+            'posts/group_list.html': '/group/test-slug/',
+            'posts/profile.html': '/profile/auth/',
+            'posts/post_detail.html': f'/posts/{self.post.id}/',
+        }
+        for template, adress in templates_url_name.items():
+            with self.subTest(adress=adress):
+                if self.client:
+                    response = self.client.get(adress)
+                    self.assertEqual(
+                        response.status_code,
+                        HTTPStatus.OK,
+                        template
+                    )
+
+    def test_availability_of_private_pages_for_authorized_users(self):
+        '''тесты доступности приватных страниц
+        для авторизованных пользователей'''
+        response = self.authorized_client.get('/post_create/')
+        self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
+
+    def test_edit_url_redirect_anonymous_on_admin_login(self):
+        '''тест, отражающий поведение,
+        когда гость попадает на страницу редактирования поста'''
+        response = self.client.get(f'/posts/{self.post.id}/edit/', follow=True)
+        self.assertRedirects(
+            response,
+            f'/auth/login/?next=/posts/{self.post.id}/edit/'
+        )
+
+    def test_create_url_redirect_anonymous_on_admin_login(self):
+        '''тест, отражающий поведение,
+        когда гость попадает на страницу создания поста'''
+        response = self.client.get('/post_create/', follow=True)
+        self.assertEqual(
+            response.status_code,
+            HTTPStatus.NOT_FOUND
+        )
+
+    def test_an_authorized_user_is_editing_not_his_post(self):
+        '''тест, отражающий поведение,
+        когда авторизованный пользователь
+        пытается редактировать не свой пост.'''
+        response = self.authorized_client.get(
+            f'/posts/{self.post.id}/edit/',
+            follow=True
+        )
+        if self.authorized_client != self.author_client:
+            self.assertEqual(
+                response.status_code,
+                HTTPStatus.OK
+            )

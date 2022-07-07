@@ -33,7 +33,9 @@ class FormPostTests(TestCase):
         self.authorized_client = Client()
         self.authorized_client.force_login(self.user)
 
-    def test_create_post(self):
+    def test_an_authorized_user_can_create_a_post(self):
+        '''Валидная форма создает запись в Post
+        авторизованным пользователем'''
         posts_count = Post.objects.count()
         form_post = {
             'text': 'Текст создаваемого поста',
@@ -50,12 +52,19 @@ class FormPostTests(TestCase):
             )
         )
         self.assertEqual(Post.objects.count(), posts_count + 1)
-        self.assertTrue(Post.objects.filter(text='Тестовый пост').exists())
+        self.assertTrue(Post.objects.filter(
+            id=(self.post.id),
+            text='Тестовый пост',
+            group=self.group.id,
+        ).exists())
 
-    def test_post_edit(self):
+    def test_an_authorized_user_can_edit_the_post(self):
+        '''При отправке валидной формы авторизованным пользователем
+        со страницы редактирования поста происходит изменение поста'''
         posts_count = Post.objects.count()
         form_post = {
             'text': 'Текст изменённого поста',
+            'group': self.group.id,
         }
         response = self.authorized_client.post(
             reverse(('posts:edit'), kwargs={'post_id': f'{self.post.id}'}),
@@ -71,5 +80,9 @@ class FormPostTests(TestCase):
         )
         self.assertEqual(Post.objects.count(), posts_count)
         self.assertTrue(
-            Post.objects.filter(text='Текст изменённого поста').exists()
+            Post.objects.filter(
+                id=self.post.id,
+                text='Текст изменённого поста',
+                group=self.group.id,
+            ).exists()
         )

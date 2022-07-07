@@ -21,20 +21,18 @@ class PostModelTest(TestCase):
         )
         cls.post = Post.objects.create(
             author=cls.user,
-            text='Тестовая пост',
+            text='Какой-то текст,'
         )
 
     def test_models_have_correct_object_names(self):
         """Проверяем, что у моделей корректно работает __str__."""
-        model_post = PostModelTest.post
-        model_group = PostModelTest.group
         models_dict = {
-            model_post: model_post.text[:15],
-            model_group: model_group.title
+            self.post: self.post.text[:15],
+            self.group: self.group.title
         }
         for model, expected_value in models_dict.items():
             with self.subTest(model=model):
                 self.assertEqual(
-                    model.__str__(), expected_value,
+                    expected_value, str(model),
                     'метод __str__ работает не верно'
                 )
