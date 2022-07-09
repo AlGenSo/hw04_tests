@@ -1,10 +1,9 @@
-from django.contrib.auth import get_user_model
-from django.test import TestCase, Client
 from http import HTTPStatus
 
-from ..models import Group, Post
+from django.urls import reverse
+from django.test import TestCase, Client
 
-User = get_user_model()
+from ..models import Group, Post, User
 
 
 class StaticURLTests(TestCase):
@@ -43,8 +42,8 @@ class StaticURLTests(TestCase):
         и названия шаблонов приложения'''
         templates_url_names = {
             '/': 'posts/index.html',
-            '/group/test-slug/': 'posts/group_list.html',
-            '/profile/auth/': 'posts/profile.html',
+            f'/group/{self.group.slug}/': 'posts/group_list.html',
+            f'/profile/{self.user}/': 'posts/profile.html',
             f'/posts/{self.post.id}/': 'posts/post_detail.html',
             '/create/': 'posts/post_create.html',
             f'/posts/{self.post.id}/edit/': 'posts/post_create.html',
@@ -81,8 +80,8 @@ class StaticURLTests(TestCase):
     def test_availability_of_private_pages_for_authorized_users(self):
         '''тесты доступности приватных страниц
         для авторизованных пользователей'''
-        response = self.authorized_client.get('/post_create/')
-        self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
+        response = self.authorized_client.get('/create/')
+        self.assertEqual(response.status_code, HTTPStatus.OK)
 
     def test_edit_url_redirect_anonymous_on_admin_login(self):
         '''тест, отражающий поведение,
@@ -96,10 +95,10 @@ class StaticURLTests(TestCase):
     def test_create_url_redirect_anonymous_on_admin_login(self):
         '''тест, отражающий поведение,
         когда гость попадает на страницу создания поста'''
-        response = self.client.get('/post_create/', follow=True)
-        self.assertEqual(
-            response.status_code,
-            HTTPStatus.NOT_FOUND
+        response = self.client.get('/create/', follow=True)
+        self.assertRedirects(
+            response,
+            '/auth/login/?next=/create/'
         )
 
     def test_an_authorized_user_is_editing_not_his_post(self):
@@ -110,8 +109,10 @@ class StaticURLTests(TestCase):
             f'/posts/{self.post.id}/edit/',
             follow=True
         )
-        if self.authorized_client != self.author_client:
-            self.assertEqual(
-                response.status_code,
-                HTTPStatus.OK
+        self.assertRedirects(
+            response,
+            reverse(
+                ('posts:post_detail'),
+                kwargs={'post_id': self.post.id}
             )
+        )

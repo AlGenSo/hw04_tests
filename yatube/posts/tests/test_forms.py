@@ -1,13 +1,8 @@
-
-from django.contrib.auth import get_user_model
 from django.test import Client, TestCase
 from django.urls import reverse
 
 from posts.models import Post, Group, User
 from posts.forms import PostForm
-
-
-User = get_user_model()
 
 
 class FormPostTests(TestCase):
@@ -19,14 +14,14 @@ class FormPostTests(TestCase):
         cls.user = User.objects.create_user(username='auth')
         cls.form = PostForm
         cls.group = Group.objects.create(
-            title='ТЕстовая группа',
+            title='Тестовая группа',
             slug='test-slug',
             description='Тестовое описание',
         )
         cls.post = Post.objects.create(
             author=cls.user,
             text='Тестовый пост',
-            group=cls.group
+            group=cls.group,
         )
 
     def setUp(self):
@@ -48,15 +43,12 @@ class FormPostTests(TestCase):
             response,
             reverse(
                 ('posts:profile'),
-                kwargs={'username': f'{self.user.username}'}
+                kwargs={'username': self.user.username}
             )
         )
         self.assertEqual(Post.objects.count(), posts_count + 1)
-        self.assertTrue(Post.objects.filter(
-            id=(self.post.id),
-            text='Тестовый пост',
-            group=self.group.id,
-        ).exists())
+        self.assertEqual(Post.objects.first().text, form_post['text'])
+        self.assertEqual(Post.objects.first().group.id, form_post['group'])
 
     def test_an_authorized_user_can_edit_the_post(self):
         '''При отправке валидной формы авторизованным пользователем

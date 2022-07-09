@@ -1,12 +1,9 @@
-from django.contrib.auth import get_user_model
 from django.test import TestCase, Client
 from django.urls import reverse
 from django import forms
 
 from ..models import Group, Post, User
 from ..constants import COUNT_POSTS_LIMIT_1, COUNT_POSTS_LIMIT_2
-
-User = get_user_model()
 
 
 class StaticURLTests(TestCase):
@@ -33,7 +30,6 @@ class StaticURLTests(TestCase):
         )
 
     def setUp(self):
-        self.guest_client = Client()
         self.guest = User.objects.create_user(username='HasNoName')
         self.authorized_client = Client()
         self.authorized_client.force_login(self.guest)
@@ -76,37 +72,46 @@ class StaticURLTests(TestCase):
                     response.context['page_obj'][0].group: self.group,
                     response.context['page_obj'][0].author: self.user.username}
         for value, expected in post_atr.items():
-            self.assertEqual(post_atr[value], expected)
+            with self.subTest(value=value):
+                self.assertEqual(post_atr[value], expected)
 
     def test_group_list_page_show_correct_context(self):
         '''В шаблон передан правильный контекст group_list'''
         response = self.authorized_client.get(
             reverse('posts:group_list', kwargs={'slug': f'{self.group.slug}'}))
-        post_atr = {response.context['page_obj'][0].text: 'Тестовый пост',
+        post_atr = {response.context['page_obj'][0].text: self.post.text,
+                    response.context['page_obj'][0].id: self.post.id,
                     response.context['page_obj'][0].group: self.group,
+                    response.context['group'].slug: self.group.slug,
                     response.context['page_obj'][0].author: self.user.username}
         for value, expected in post_atr.items():
-            self.assertEqual(post_atr[value], expected)
+            with self.subTest(value=value):
+                self.assertEqual(post_atr[value], expected)
 
     def test_profile_page_show_correct_context(self):
         '''В шаблон передан правильный контекст profile'''
         response = self.author_client.get(
             reverse('posts:profile', kwargs={'username': self.post.author}))
-        post_atr = {response.context['page_obj'][0].text: 'Тестовый пост',
+        post_atr = {response.context['page_obj'][0].text: self.post.text,
+                    response.context['page_obj'][0].id: self.post.id,
                     response.context['page_obj'][0].group: self.group,
-                    response.context['page_obj'][0].author: self.user.username}
+                    response.context['page_obj'][0].author: self.user.username,
+                    response.context['author'].username: self.user}
         for value, expected in post_atr.items():
-            self.assertEqual(post_atr[value], expected)
+            with self.subTest(value=value):
+                self.assertEqual(post_atr[value], expected)
 
     def test_post_detail_show_correct_context(self):
         '''В шаблон передан правильный контекст post_detail'''
         response = self.author_client.get(
             reverse('posts:post_detail', kwargs={'post_id': self.post.id}))
-        post_atr = {response.context['post'].text: 'Тестовый пост',
+        post_atr = {response.context['post'].text: self.post.text,
+                    response.context['post'].id: self.post.id,
                     response.context['post'].group: self.group,
                     response.context['post'].author: self.user.username}
         for value, expected in post_atr.items():
-            self.assertEqual(post_atr[value], expected)
+            with self.subTest(value=value):
+                self.assertEqual(post_atr[value], expected)
 
     def test_post_create_show_correct_context(self):
         '''В шаблон передан правильный контекст post_create'''
@@ -132,7 +137,8 @@ class StaticURLTests(TestCase):
             with self.subTest(value=value):
                 form_fields = response.context.get('form').fields.get(value)
                 self.assertIsInstance(form_fields, expected)
-                self.assertEqual(response.context.get('is_edit'), True)
+        self.assertEqual(response.context.get('is_edit'), True)
+        self.assertIsInstance(response.context.get('is_edit'), bool)
 
     def test_additional_verification_when_creating_a_post(self):
         '''Пост появляется на главной странице сайта,
@@ -186,7 +192,12 @@ class PaginatorViewsTest(TestCase):
         Post.objects.bulk_create(heap_of_posts)
 
     def setUp(self):
-        self.client = Client()
+        self.guest = User.objects.create_user(username='NoName')
+        self.authorized_client = Client()
+        self.authorized_client.force_login(self.guest)
+        self.user = User.objects.get(username='author_test')
+        self.author_client = Client()
+        self.author_client.force_login(self.user)
 
     def test_first_page_contains_ten_records(self):
         '''количество постов на первой странице
@@ -210,4 +221,32 @@ class PaginatorViewsTest(TestCase):
                 response.context['page_obj']
             ),
             COUNT_POSTS_LIMIT_2
+        )
+
+    def test_group_page_contains_three_records(self):
+        '''количество постов на странице группы
+        равно количеству указанному в константе COUNT_POSTS_LIMIT_1
+        в test/constants.py'''
+        response = self.authorized_client.get(
+            reverse('posts:group_list', kwargs={'slug': self.group.slug})
+        )
+        self.assertEqual(
+            len(
+                response.context['page_obj']
+            ),
+            COUNT_POSTS_LIMIT_1
+        )
+
+    def test_profile_page_contains_ten_records(self):
+        '''количество постов на странице профиля
+        равно количеству указанному в константе COUNT_POSTS_LIMIT_1
+        в test/constants.py'''
+        response = self.authorized_client.get(
+            reverse('posts:profile', kwargs={'username': self.user})
+        )
+        self.assertEqual(
+            len(
+                response.context['page_obj']
+            ),
+            COUNT_POSTS_LIMIT_1
         )
