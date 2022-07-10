@@ -34,7 +34,7 @@ class StaticURLTests(TestCase):
 
     def the_test_page_is_available_only_to_the_author(self):
         '''Страница доступна только автору'''
-        response = self.author_client.get(self.post.id)
+        response = self.author_client.get(f'/posts/{self.post.id}/')
         self.assertEqual(response.status_code, HTTPStatus.OK)
 
     def test_urls_uses_correct_template(self):
@@ -61,20 +61,19 @@ class StaticURLTests(TestCase):
 
     def test_availability_of_public_pages_for_guests(self):
         '''тест доступности публичных страниц для гостей'''
-        templates_url_name = {
-            'posts/index.html': '/',
-            'posts/group_list.html': '/group/test-slug/',
-            'posts/profile.html': '/profile/auth/',
-            'posts/post_detail.html': f'/posts/{self.post.id}/',
-        }
-        for template, adress in templates_url_name.items():
+        templates_url_name = [
+            '/',
+            f'/group/{self.group.slug}/',
+            f'/profile/{self.user}/',
+            f'/posts/{self.post.id}/',
+        ]
+        for adress in templates_url_name:
             with self.subTest(adress=adress):
                 if self.client:
                     response = self.client.get(adress)
                     self.assertEqual(
                         response.status_code,
                         HTTPStatus.OK,
-                        template
                     )
 
     def test_availability_of_private_pages_for_authorized_users(self):

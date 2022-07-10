@@ -2,6 +2,7 @@ from django.contrib.auth import get_user_model
 from django.test import TestCase
 
 from ..models import Group, Post
+from posts.constants import STRING_LENGHT_LIMIT
 
 User = get_user_model()
 
@@ -27,7 +28,7 @@ class PostModelTest(TestCase):
     def test_models_have_correct_object_names(self):
         """Проверяем, что у моделей корректно работает __str__."""
         models_dict = {
-            self.post: self.post.text[:15],
+            self.post: self.post.text[:STRING_LENGHT_LIMIT],
             self.group: self.group.title
         }
         for model, expected_value in models_dict.items():

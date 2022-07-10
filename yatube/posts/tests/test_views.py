@@ -68,12 +68,13 @@ class StaticURLTests(TestCase):
     def test_post_page_show_correct_context(self):
         '''В шаблон передан правильный контекст index'''
         response = self.authorized_client.get(reverse('posts:index'))
-        post_atr = {response.context['page_obj'][0].text: 'Тестовый пост',
+        post_atr = {response.context['page_obj'][0].text: self.post.text,
+                    response.context['page_obj'][0].id: self.post.id,
                     response.context['page_obj'][0].group: self.group,
-                    response.context['page_obj'][0].author: self.user.username}
+                    response.context['page_obj'][0].author: self.user}
         for value, expected in post_atr.items():
             with self.subTest(value=value):
-                self.assertEqual(post_atr[value], expected)
+                self.assertEqual(value, expected)
 
     def test_group_list_page_show_correct_context(self):
         '''В шаблон передан правильный контекст group_list'''
@@ -81,12 +82,12 @@ class StaticURLTests(TestCase):
             reverse('posts:group_list', kwargs={'slug': f'{self.group.slug}'}))
         post_atr = {response.context['page_obj'][0].text: self.post.text,
                     response.context['page_obj'][0].id: self.post.id,
-                    response.context['page_obj'][0].group: self.group,
-                    response.context['group'].slug: self.group.slug,
-                    response.context['page_obj'][0].author: self.user.username}
+                    response.context['page_obj'][0].group: self.post.group,
+                    response.context['group']: self.group,
+                    response.context['page_obj'][0].author: self.user}
         for value, expected in post_atr.items():
             with self.subTest(value=value):
-                self.assertEqual(post_atr[value], expected)
+                self.assertEqual(value, expected)
 
     def test_profile_page_show_correct_context(self):
         '''В шаблон передан правильный контекст profile'''
@@ -95,11 +96,11 @@ class StaticURLTests(TestCase):
         post_atr = {response.context['page_obj'][0].text: self.post.text,
                     response.context['page_obj'][0].id: self.post.id,
                     response.context['page_obj'][0].group: self.group,
-                    response.context['page_obj'][0].author: self.user.username,
-                    response.context['author'].username: self.user}
+                    response.context['page_obj'][0].author: self.user,
+                    response.context['author'].username: self.user.username}
         for value, expected in post_atr.items():
             with self.subTest(value=value):
-                self.assertEqual(post_atr[value], expected)
+                self.assertEqual(value, expected)
 
     def test_post_detail_show_correct_context(self):
         '''В шаблон передан правильный контекст post_detail'''
@@ -108,10 +109,10 @@ class StaticURLTests(TestCase):
         post_atr = {response.context['post'].text: self.post.text,
                     response.context['post'].id: self.post.id,
                     response.context['post'].group: self.group,
-                    response.context['post'].author: self.user.username}
+                    response.context['post'].author: self.user}
         for value, expected in post_atr.items():
             with self.subTest(value=value):
-                self.assertEqual(post_atr[value], expected)
+                self.assertEqual(value, expected)
 
     def test_post_create_show_correct_context(self):
         '''В шаблон передан правильный контекст post_create'''

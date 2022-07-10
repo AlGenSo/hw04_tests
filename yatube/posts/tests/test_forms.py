@@ -36,6 +36,7 @@ class FormPostTests(TestCase):
             'text': 'Текст создаваемого поста',
             'group': self.group.id,
         }
+        post = Post.objects.first()
         response = self.authorized_client.post(
             reverse('posts:post_create'), data=form_post, follow=True,
         )
@@ -47,8 +48,9 @@ class FormPostTests(TestCase):
             )
         )
         self.assertEqual(Post.objects.count(), posts_count + 1)
-        self.assertEqual(Post.objects.first().text, form_post['text'])
-        self.assertEqual(Post.objects.first().group.id, form_post['group'])
+        self.assertEqual(post.text, self.post.text)
+        self.assertEqual(post.group.id, self.group.id)
+        self.assertEqual(post.author, self.user)
 
     def test_an_authorized_user_can_edit_the_post(self):
         '''При отправке валидной формы авторизованным пользователем
