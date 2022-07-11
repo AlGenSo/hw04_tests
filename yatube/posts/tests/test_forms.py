@@ -48,9 +48,9 @@ class FormPostTests(TestCase):
             )
         )
         self.assertEqual(Post.objects.count(), posts_count + 1)
-        self.assertEqual(post.text, post.text)
-        self.assertEqual(post.group.id, post.group.id)
-        self.assertEqual(post.author, post.author)
+        self.assertEqual(post.text, form_post['text'])
+        self.assertEqual(post.group.id, form_post['group'])
+        self.assertEqual(post.author, self.user)
 
     def test_an_authorized_user_can_edit_the_post(self):
         '''При отправке валидной формы авторизованным пользователем
