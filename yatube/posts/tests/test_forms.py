@@ -36,10 +36,10 @@ class FormPostTests(TestCase):
             'text': 'Текст создаваемого поста',
             'group': self.group.id,
         }
-        post = Post.objects.first()
         response = self.authorized_client.post(
             reverse('posts:post_create'), data=form_post, follow=True,
         )
+        post = Post.objects.first()
         self.assertRedirects(
             response,
             reverse(
@@ -48,9 +48,9 @@ class FormPostTests(TestCase):
             )
         )
         self.assertEqual(Post.objects.count(), posts_count + 1)
-        self.assertEqual(post.text, self.post.text)
-        self.assertEqual(post.group.id, self.group.id)
-        self.assertEqual(post.author, self.user)
+        self.assertEqual(post.text, post.text)
+        self.assertEqual(post.group.id, post.group.id)
+        self.assertEqual(post.author, post.author)
 
     def test_an_authorized_user_can_edit_the_post(self):
         '''При отправке валидной формы авторизованным пользователем
@@ -76,7 +76,7 @@ class FormPostTests(TestCase):
         self.assertTrue(
             Post.objects.filter(
                 id=self.post.id,
-                text='Текст изменённого поста',
+                text=form_post['text'],
                 group=self.group.id,
             ).exists()
         )

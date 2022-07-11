@@ -68,10 +68,11 @@ class StaticURLTests(TestCase):
     def test_post_page_show_correct_context(self):
         '''В шаблон передан правильный контекст index'''
         response = self.authorized_client.get(reverse('posts:index'))
-        post_atr = {response.context['page_obj'][0].text: self.post.text,
-                    response.context['page_obj'][0].id: self.post.id,
-                    response.context['page_obj'][0].group: self.group,
-                    response.context['page_obj'][0].author: self.user}
+        post = response.context['page_obj'][0]
+        post_atr = {post.text: self.post.text,
+                    post.id: self.post.id,
+                    post.group: self.post.group,
+                    post.author: self.post.author}
         for value, expected in post_atr.items():
             with self.subTest(value=value):
                 self.assertEqual(value, expected)
@@ -80,11 +81,13 @@ class StaticURLTests(TestCase):
         '''В шаблон передан правильный контекст group_list'''
         response = self.authorized_client.get(
             reverse('posts:group_list', kwargs={'slug': f'{self.group.slug}'}))
-        post_atr = {response.context['page_obj'][0].text: self.post.text,
-                    response.context['page_obj'][0].id: self.post.id,
-                    response.context['page_obj'][0].group: self.post.group,
-                    response.context['group']: self.group,
-                    response.context['page_obj'][0].author: self.user}
+        post = response.context['page_obj'][0]
+        group = response.context['group']
+        post_atr = {post.text: self.post.text,
+                    post.id: self.post.id,
+                    post.group: self.post.group,
+                    group: self.group,
+                    post.author: self.post.author}
         for value, expected in post_atr.items():
             with self.subTest(value=value):
                 self.assertEqual(value, expected)
@@ -93,11 +96,13 @@ class StaticURLTests(TestCase):
         '''В шаблон передан правильный контекст profile'''
         response = self.author_client.get(
             reverse('posts:profile', kwargs={'username': self.post.author}))
-        post_atr = {response.context['page_obj'][0].text: self.post.text,
-                    response.context['page_obj'][0].id: self.post.id,
-                    response.context['page_obj'][0].group: self.group,
-                    response.context['page_obj'][0].author: self.user,
-                    response.context['author'].username: self.user.username}
+        post = response.context['page_obj'][0]
+        author = response.context['author']
+        post_atr = {post.text: self.post.text,
+                    post.id: self.post.id,
+                    post.group: self.post.group,
+                    post.author: self.post.author,
+                    author: self.user}
         for value, expected in post_atr.items():
             with self.subTest(value=value):
                 self.assertEqual(value, expected)
@@ -106,10 +111,11 @@ class StaticURLTests(TestCase):
         '''В шаблон передан правильный контекст post_detail'''
         response = self.author_client.get(
             reverse('posts:post_detail', kwargs={'post_id': self.post.id}))
-        post_atr = {response.context['post'].text: self.post.text,
-                    response.context['post'].id: self.post.id,
-                    response.context['post'].group: self.group,
-                    response.context['post'].author: self.user}
+        post = response.context['post']
+        post_atr = {post.text: self.post.text,
+                    post.id: self.post.id,
+                    post.group: self.post.group,
+                    post.author: self.post.author}
         for value, expected in post_atr.items():
             with self.subTest(value=value):
                 self.assertEqual(value, expected)
@@ -213,7 +219,7 @@ class PaginatorViewsTest(TestCase):
         )
 
     def test_second_page_contains_three_records(self):
-        '''количество постов на первой странице
+        '''количество постов на второй странице
         равно количеству указанному в константе COUNT_POSTS_LIMIT_2
         в test/constants.py'''
         response = self.client.get(reverse('posts:index') + '?page=2')
@@ -238,7 +244,22 @@ class PaginatorViewsTest(TestCase):
             COUNT_POSTS_LIMIT_1
         )
 
-    def test_profile_page_contains_ten_records(self):
+    def test_group_page_contains_ten_records(self):
+        '''количество постов на второй странице группы
+        равно количеству указанному в константе COUNT_POSTS_LIMIT_1
+        в test/constants.py'''
+        response = self.authorized_client.get(
+            reverse('posts:group_list', kwargs={'slug': self.group.slug})
+            + '?page=2'
+        )
+        self.assertEqual(
+            len(
+                response.context['page_obj']
+            ),
+            COUNT_POSTS_LIMIT_2
+        )
+
+    def test_profile_page_contains_three_records(self):
         '''количество постов на странице профиля
         равно количеству указанному в константе COUNT_POSTS_LIMIT_1
         в test/constants.py'''
@@ -250,4 +271,19 @@ class PaginatorViewsTest(TestCase):
                 response.context['page_obj']
             ),
             COUNT_POSTS_LIMIT_1
+        )
+
+    def test_profile_page_contains_ten_records(self):
+        '''количество постов на второй странице профиля
+        равно количеству указанному в константе COUNT_POSTS_LIMIT_1
+        в test/constants.py'''
+        response = self.authorized_client.get(
+            reverse('posts:profile', kwargs={'username': self.user})
+            + '?page=2'
+        )
+        self.assertEqual(
+            len(
+                response.context['page_obj']
+            ),
+            COUNT_POSTS_LIMIT_2
         )
